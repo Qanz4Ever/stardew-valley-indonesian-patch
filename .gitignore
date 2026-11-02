@@ -1,0 +1,10 @@
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary build artifacts
+__pycache__/
+*.pyc
+*.tmp
+push_payload.json
