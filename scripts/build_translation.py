@@ -147,6 +147,7 @@ def main():
     mod_map = build_mod_map(mod_dir)
     print(f"Mod map loaded: {len(mod_map)} target files.")
 
+    # 1. Merge translations into translated_json
     merged_files = []
     for root, dirs, files in os.walk(extracted_dir):
         for f in files:
@@ -162,6 +163,7 @@ def main():
             if not isinstance(content, dict):
                 continue
 
+            # Load mod translations if available
             mod_path = mod_map.get(rel)
             mod_dict = {}
             if mod_path:
@@ -171,8 +173,10 @@ def main():
                 except Exception as e:
                     print(f"Error loading mod file {mod_path}: {e}")
 
+            # Also check manual translations
             manual_dict = MANUAL_TRANSLATIONS.get(rel, {})
 
+            # Apply translations
             translated_keys_in_file = 0
             for k in content.keys():
                 if k in manual_dict:
@@ -182,6 +186,7 @@ def main():
                     content[k] = mod_dict[k]
                     translated_keys_in_file += 1
 
+            # Save merged JSON
             out_json_path = os.path.join(translated_json_dir, rel.replace('/', os.sep))
             os.makedirs(os.path.dirname(out_json_path), exist_ok=True)
             with open(out_json_path, 'w', encoding='utf-8') as out_f:
@@ -191,6 +196,7 @@ def main():
 
     print(f"Generated {len(merged_files)} translated JSON files.")
 
+    # 2. Pack using xnbcli directory by directory
     pack_dirs = set()
     for rel, _, _ in merged_files:
         dirname = os.path.dirname(rel)
@@ -209,9 +215,28 @@ def main():
         success_count = res.stdout.count('Output file saved:')
         total_packed += success_count
         print(f"Packed {pdir or 'root'}: {success_count}/{json_count} XNB files")
+        if success_count < json_count:
+            print("  Output:\n", res.stdout)
+            print("  Error:\n", res.stderr)
 
     print(f"\n===== PACKING COMPLETE =====")
     print(f"Total packed XNB files: {total_packed}/{total_expected}")
+
+    # 3. Validate output files
+    valid_count = 0
+    for root, dirs, files in os.walk(output_content_dir):
+        for f in files:
+            if not f.endswith('.xnb'):
+                continue
+            fpath = os.path.join(root, f)
+            with open(fpath, 'rb') as xf:
+                header = xf.read(6)
+                if header == b'XNBa\x05@':
+                    valid_count += 1
+                else:
+                    print(f"WARNING: Invalid header in {fpath}: {header}")
+
+    print(f"Header validation: {valid_count}/{total_packed} files have valid Android 'XNBa\\x05@' header.")
 
 if __name__ == '__main__':
     main()

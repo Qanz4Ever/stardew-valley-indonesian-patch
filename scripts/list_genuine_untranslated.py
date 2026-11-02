@@ -1,5 +1,3 @@
-import os
-import re
 import json
 
 with open('D:/Stardew_ID_Project/untranslated_report.json', 'r', encoding='utf-8') as f:

@@ -116,6 +116,11 @@ def run():
     with open(report_path, 'w', encoding='utf-8') as rf:
         json.dump(untranslated_by_file, rf, indent=2, ensure_ascii=False)
     print(f"Saved full untranslated report to: {report_path}")
+    
+    print("\nSample files with untranslated keys:")
+    sorted_files = sorted(untranslated_by_file.items(), key=lambda x: len(x[1]), reverse=True)
+    for rel, missing in sorted_files[:15]:
+        print(f"  {rel}: {len(missing)} untranslated keys")
 
 if __name__ == '__main__':
     run()
